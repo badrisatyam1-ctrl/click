@@ -87,6 +87,47 @@ def test_sync():
   assert 'Syncing' in result.output
 ```
 
+## Shell Completion
+
+To test suggestions from a custom shell-completion callback, call
+{meth}`ShellComplete.get_completions` directly. This checks the suggestions
+without starting a shell or setting the shell's completion environment
+variables:
+
+```{code-block} python
+:caption: colors.py
+
+import click
+from click.shell_completion import CompletionItem
+
+def complete_color(ctx, param, incomplete):
+    colors = ("blue", "green", "red")
+    return [CompletionItem(color) for color in colors if color.startswith(incomplete)]
+
+@click.command()
+@click.argument("color", shell_complete=complete_color)
+def paint(color):
+    click.echo(color)
+```
+
+```{code-block} python
+:caption: test_colors.py
+
+from click.shell_completion import ShellComplete
+from colors import paint
+
+def test_color_completion():
+    completer = ShellComplete(paint, {}, "paint", "_PAINT_COMPLETE")
+    completions = completer.get_completions([], "b")
+
+    assert [item.value for item in completions] == ["blue"]
+```
+
+`get_completions` takes the arguments before the incomplete value and the
+incomplete value itself. For nested commands, pass the parent command names
+in the argument list. The returned {class}`CompletionItem` objects include the
+suggested values and any associated metadata.
+
 ## Context Settings
 
 Additional keyword arguments passed to {meth}`CliRunner.invoke` will be used to
